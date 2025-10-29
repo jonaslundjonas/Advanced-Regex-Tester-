@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Regex Tester (Offline)</title>
+    
+    <style>
+        :root {
+            /* Material Design 3 - Dark Theme Palette */
+            --md-color-primary: #a7c8ff;
+            --md-color-on-primary: #00315a;
+            --md-color-surface-container: #1e2025;
+            --md-color-surface: #101216;
+            --md-color-on-surface: #e2e2e7;
+            --md-color-on-surface-variant: #c3c6cf;
+            --md-color-outline: #8d9199;
+            --md-color-error: #ffb4ab;
+            --md-textfield-bg: #2b2e33;
+            --md-textfield-border-color: #8d9199;
+            
+            /* Highlight Colors */
+            --highlight-bg: hsla(212, 100%, 76%, 0.4); /* Primary color with alpha */
+            --highlight-border: #a7c8ff;
+            
+            /* Shared styles for textarea and highlight overlay */
+            --editor-font: 'Courier New', Courier, monospace;
+            --editor-font-size: 1rem;
+            --editor-line-height: 1.6;
+            --editor-padding: 28px 16px 8px 16px;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--md-color-surface-container);
+            color: var(--md-color-on-surface);
+            margin: 0;
+            padding: 24px;
+        }
+
+
+        .container {
+            max-width: 1400px; /* Wider layout for more tools */
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr; /* Stack columns on mobile */
+            }
+        }
+
+
+        .input-column, .output-column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+
+        h1 {
+            color: var(--md-color-primary);
+            text-align: center;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--md-color-on-surface-variant);
+            margin: 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--md-textfield-bg);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Base button style */
+        .btn {
+            background: none;
+            border: 1px solid var(--md-color-outline);
+            color: var(--md-color-primary);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            background-color: var(--md-color-primary);
+            color: var(--md-color-on-primary);
+        }
+        
+        /* Copy button specific style */
+        .copy-btn {
+             /* Inherits from .btn */
+        }
+        .copy-btn.copied {
+            background-color: #4caf50;
+            border-color: #4caf50;
+            color: white;
+        }
+
+
+        /* Clear Button Styles */
+        .button-group {
+            display: flex;
+            gap: 8px; /* Space between buttons */
+        }
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--md-color-outline);
+            border-color: var(--md-color-outline);
+        }
+        .btn-secondary:hover {
+            background-color: var(--md-textfield-bg);
+            color: var(--md-color-primary);
+            border-color: var(--md-color-primary);
+        }
+
+
+
+
+        /* --- Material Design Text Field Emulation --- */
+        .md-textfield {
+            position: relative;
+            background-color: var(--md-textfield-bg);
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid var(--md-textfield-border-color);
+        }
+        .md-textfield label {
+            position: absolute;
+            top: 18px;
+            left: 16px;
+            color: var(--md-color-on-surface-variant);
+            font-size: 1rem;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .md-textfield textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: var(--editor-padding);
+            border: none;
+            background-color: transparent;
+            font-family: inherit;
+            color: var(--md-color-on-surface);
+            resize: vertical;
+        }
+        .md-textfield textarea:focus {
+            outline: none;
+            border-bottom: 2px solid var(--md-color-primary);
+            margin-bottom: -1px; /* Account for thicker border */
+        }
+        .md-textfield textarea:focus + label,
+        .md-textfield textarea:not(:placeholder-shown) + label {
+            top: 6px;
+            font-size: 0.75rem;
+            color: var(--md-color-primary);
+        }
+        
+        /* Specific for Regex Input */
+        #regex-input {
+            font-family: var(--editor-font);
+            font-size: var(--editor-font-size);
+            font-weight: bold;
+            color: var(--md-color-primary);
+            line-height: var(--editor-line-height);
+        }
+        
+        /* --- Flag Toggles --- */
+        .flag-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 12px 0;
+        }
+        .flag-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .flag-toggle input {
+            cursor: pointer;
+        }
+
+
+        /* --- Pattern Library --- */
+        .md-select-wrapper {
+            position: relative;
+            background-color: var(--md-textfield-bg);
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid var(--md-textfield-border-color);
+        }
+        .md-select-wrapper label {
+            position: absolute;
+            top: 6px;
+            left: 16px;
+            font-size: 0.75rem;
+            color: var(--md-color-primary);
+        }
+        .md-select-wrapper select {
+            width: 100%;
+            padding: 28px 16px 8px 16px;
+            border: none;
+            background-color: transparent;
+            color: var(--md-color-on-surface);
+            font-size: 1rem;
+            cursor: pointer;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .md-select-wrapper::after { /* Dropdown arrow */
+            content: '▼';
+            position: absolute;
+            top: 50%;
+            right: 16px;
+            transform: translateY(-40%);
+            font-size: 0.8rem;
+            color: var(--md-color-on-surface-variant);
+            pointer-events: none;
+        }
+        .md-select-wrapper select:focus {
+            outline: none;
+            border-bottom: 2px solid var(--md-color-primary);
+            margin-bottom: -1px;
+        }
+        
+        /* Dark Dropdown Options */
+        .md-select-wrapper select option {
+            background-color: var(--md-textfield-bg);
+            color: var(--md-color-on-surface);
+        }
+        .md-select-wrapper select optgroup {
+            font-style: italic;
+            font-weight: bold;
+            color: var(--md-color-primary);
+            background-color: var(--md-color-surface-container);
+        }
+        
+        /* --- Live Highlight Text Editor --- */
+        .text-input-wrapper {
+            position: relative;
+            background-color: var(--md-textfield-bg);
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid var(--md-textfield-border-color);
+        }
+        .text-input-wrapper label {
+            position: absolute;
+            top: 6px;
+            left: 16px;
+            font-size: 0.75rem;
+            color: var(--md-color-primary);
+            z-index: 3;
+            pointer-events: none;
+        }
+        
+        /* Base styles for both textarea and highlight div */
+        .editor-base {
+            margin: 0;
+            padding: var(--editor-padding);
+            width: 100%;
+            box-sizing: border-box;
+            border: none;
+            background-color: transparent;
+            font-family: var(--editor-font);
+            font-size: var(--editor-font-size);
+            line-height: var(--editor-line-height);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 250px;
+            resize: vertical;
+        }
+        
+        #text-input {
+            position: relative;
+            z-index: 2;
+            color: transparent; /* Text is invisible, caret is not */
+            caret-color: var(--md-color-on-surface);
+        }
+        #text-input:focus {
+            outline: none;
+        }
+
+
+        #highlight-output {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+            color: var(--md-color-on-surface);
+            overflow: hidden; /* Scroll is handled by JS */
+            resize: none;
+        }
+        
+        /* Highlight style */
+        #highlight-output mark {
+            background-color: var(--highlight-bg);
+            border-bottom: 2px solid var(--highlight-border);
+            color: inherit;
+            border-radius: 2px;
+        }
+        
+        /* Error Message */
+        #error-message {
+            color: var(--md-color-error);
+            font-weight: 500;
+            font-family: var(--editor-font);
+            font-size: 0.9rem;
+            min-height: 1.2em;
+            margin-top: -16px; 
+            padding-left: 16px;
+        }
+
+
+        /* --- Output Groups --- */
+        .output-group {
+            background-color: var(--md-color-surface);
+            border-radius: 8px;
+            border: 1px solid var(--md-color-outline);
+            padding: 16px;
+        }
+        .output-box {
+            background-color: #1a1e22;
+            border: 1px solid #3d4146;
+            border-radius: 4px;
+            padding: 16px;
+            min-height: 150px;
+            font-family: var(--editor-font);
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.5;
+            color: #d8d8d8;
+        }
+
+
+        /* --- Cheat Sheet --- */
+        details {
+            border: 1px solid var(--md-color-outline);
+            border-radius: 8px;
+            background-color: var(--md-color-surface);
+        }
+        details summary {
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 14px;
+            color: var(--md-color-primary);
+        }
+        .cheatsheet-content {
+            padding: 0 16px 16px 16px;
+        }
+        .cheatsheet-content table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .cheatsheet-content th, .cheatsheet-content td {
+            border: 1px solid var(--md-color-outline);
+            padding: 8px;
+            text-align: left;
+        }
+        .cheatsheet-content th {
+            background-color: var(--md-textfield-bg);
+        }
+        .cheatsheet-content code {
+            background: var(--md-textfield-bg);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: var(--editor-font);
+            color: var(--md-color-primary);
+        }
+    </style>
+</head>
+<body>
+
+
+    <div class="container">
+        <h1>Advanced Regex Tester</h1>
+        
+        <div class="main-grid">
+            
+            <div class="input-column">
+                
+                <div class="regex-group">
+                    <div class="section-header">
+                        <h2>Regular Expression</h2>
+                        <div class="button-group">
+                            <button class="btn copy-btn" id="copy-regex-btn" data-target="regex-input">Copy</button>
+                            <button class="btn btn-secondary clear-btn" id="clear-regex-btn" data-target="regex-input">Clear</button>
+                        </div>
+                    </div>
+                    <div class="md-textfield">
+                        <textarea id="regex-input" placeholder=" " rows="2"></textarea>
+                        <label for="regex-input">Pattern</label>
+                    </div>
+                    <div id="error-message"></div>
+                </div>
+
+
+                <div class="flag-toggles">
+                    <label class="flag-toggle"><input type="checkbox" id="flag-g" value="g"> Global (g)</label>
+                    <label class="flag-toggle"><input type="checkbox" id="flag-i" value="i"> Case-Insensitive (i)</label>
+                    <label class="flag-toggle"><input type="checkbox" id="flag-m" value="m"> Multiline (m)</label>
+                    <label class="flag-toggle"><input type="checkbox" id="flag-s" value="s"> dotAll (s)</label>
+                    <label class="flag-toggle"><input type="checkbox" id="flag-u" value="u"> Unicode (u)</label>
+                    <label class="flag-toggle"><input type="checkbox" id="flag-y" value="y"> Sticky (y)</label>
+                </div>
+                
+                <div class="md-select-wrapper">
+                    <label for="pattern-library">Load Snippet</label>
+                    <select id="pattern-library">
+                        <option value="">Select a common pattern...</option>
+                        
+                        <optgroup label="General">
+                            <option data-pattern="^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$" data-flags="g,i">Email Address</option>
+                            <option data-pattern="^#?([a-f0-9]{6}|[a-f0-9]{3})$" data-flags="g,i,m">Hex Color Code</option>
+                        </optgroup>
+
+
+                        <optgroup label="Web & Network">
+                             <option data-pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)" data-flags="g,i">URL (HTTP/S)</option>
+                            <option data-pattern="https?:\/\/(?:www\.)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})" data-flags="g,i">Extract Domain Name</option>
+                            <option data-pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$" data-flags="g">URL Slug</option>
+                            <option data-pattern="^(?:([01]?[0-9]?[0-9]|25[0-5]|2[0-4][0-9])\.){3}([01]?[0-9]?[0-9]|25[0-5]|2[0-4][0-9])$" data-flags="g,m">IP Address (IPv4)</option>
+                             <option data-pattern="\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b|\b(?:[0-9a-fA-F]{1,4}:){1,7}:|\b(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}\b|\b(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}\b|\b(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}\b|\b(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}\b|\b(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}\b|\b[0-9a-fA-F]{1,4}:(?::[0-9a-fA-F]{1,4}){1,6}\b|\b:(?::[0-9a-fA-F]{1,4}){1,7}\b|::\b" data-flags="g,i">IP Address (IPv6)</option>
+                            <option data-pattern="^(?:[0-9A-Fa-f]{2}([:-]?)[0-9A-Fa-f]{2})(?:(?:\1|\.)(?:[0-9A-Fa-f]{2}([:-]?)[0-9A-Fa-f]{2})){2}$" data-flags="g,i,m">MAC Address</option>
+                            <option data-pattern="" data-flags="gs">HTML Comment</option>
+                             <option data-pattern="<\/?[a-zA-Z0-9]+[^>]*>" data-flags="g">HTML/XML Tag</option>
+                        </optgroup>
+                        
+                        <optgroup label="Date, Time & Misc">
+                            <option data-pattern="^\d{4}-\d{2}-\d{2}$" data-flags="g,m">Date (YYYY-MM-DD)</option>
+                            <option data-pattern="\b(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/(19|20)\d{2}\b" data-flags="g">Date (MM/DD/YYYY)</option>
+                            <option data-pattern="\b([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?\b" data-flags="g">Time (HH:MM or HH:MM:SS)</option>
+                            <option data-pattern="\+(?:[0-9] ?){6,14}[0-9]" data-flags="g">International Phone (General)</option>
+                            <option data-pattern="\b(?:97[89][ -]?)?\d{1,5}[ -]?\d+[- ]?\d+[- ]?[\dX]\b" data-flags="g">ISBN (10 or 13)</option>
+                        </optgroup>
+
+
+                        <optgroup label="Developer / Tech">
+                            <option data-pattern="\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b" data-flags="g,i">UUID / GUID</option>
+                            <option data-pattern="\b(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[\w.-]+)?(?:\+[\w.-]+)?\b" data-flags="g">Semantic Version (SemVer)</option>
+                            <option data-pattern="\b[\w.-]+\.[\w]{2,4}\b" data-flags="g">File with Extension</option>
+                             <option data-pattern="^(?:"(?:[^"]|"")*"|[^,"]*)(?:,(?:"(?:[^"]|"")*"|[^,"]*))*$" data-flags="gm">CSV Line</option>
+                        </optgroup>
+
+
+                        <optgroup label="Text Processing / Validation">
+                             <option data-pattern="^[a-zA-Z0-9_-]{3,16}$" data-flags="m">Username (Simple)</option>
+                            <option data-pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$" data-flags="m">Password Strength (Example)</option>
+                            <option data-pattern="\bword\b" data-flags="g">Match Whole Word Only (edit 'word')</option>
+                        </optgroup>
+                        
+                        <optgroup label="Finance (Global)">
+                            <option data-pattern="\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b" data-flags="g">IBAN (General)</option>
+                            <option data-pattern="^\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b$" data-flags="g,m">SWIFT Code</option>
+                            <option data-pattern="\b4[0-9]{12}(?:[0-9]{3})?\b" data-flags="g">Visa Card</option>
+                            <option data-pattern="\b(?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}\b" data-flags="g">MasterCard</option>
+                            <option data-pattern="\b3[47][0-9]{13}\b" data-flags="g">American Express</option>
+                            <option data-pattern="^(?:6011\d{12})|(?:65\d{14})$" data-flags="g">Discover Card</option>
+                        </optgroup>
+                        
+                        <optgroup label="National IDs (Europe)">
+                            <option data-pattern="^[0-9]{10}$" data-flags="g,m">Austria - Social Insurance (ASVG)</option>
+                            <option data-pattern="^[0-9]{2}\.?[0-9]{2}\.?[0-9]{2}-[0-9]{3}\.?[0-9]{2}$" data-flags="g,m">Belgium - National Number (NISS)</option>
+                            <option data-pattern="^\d{10}$" data-flags="g,m">Bulgaria - Uniform Civil Number (EGN)</option>
+                            <option data-pattern="^[0-9]{7}[A-Z]W?$" data-flags="g,i,m">Ireland (IE) / Cyprus (CY) - PPS Number</option>
+                            <option data-pattern="^\d{11}$" data-flags="g,m">Croatia - Personal ID (OIB)</option>
+                            <option data-pattern="^((((0[1-9]|[12][0-9]|3[01])(0[13578]|10|12)(\d{2}))|(([0][1-9]|[12][0-9]|30)(0[469]|11)(\d{2}))|((0[1-9]|1[0-9]|2[0-8])(02)(\d{2}))|((29)(02)(00))|((29)(02)([2468][048]))|((29)(02)([13579][26])))[-]\d{4})$" data-flags="g,m">Denmark - Social Security (CPR)</option>
+                            <option data-pattern="^\d{11}$" data-flags="g,m">Estonia - Personal ID (Isikukood)</option>
+                            <option data-pattern="^[0-9]{2}\.?[0,1][0-9]\.?[0-9]{2}[-+A][0-9]{3}[A-Z]$" data-flags="g,i,m">Finland - Personal ID (HETU)</option>
+                            <option data-pattern="^\b\d{13}|\d{13}\s\d{2}\b$" data-flags="g,m">France - Social Security (INSEE)</option>
+                            <option data-pattern="^\b\b\d{12}\b\b$" data-flags="g,m">France - National ID (CNI)</option>
+                            <option data-pattern="^[0-9]{3}/?[0-9]{4}/?[0-9]{4}$" data-flags="g,m">Germany - Tax ID (Steuer-ID)</option>
+                            <option data-pattern="^\d{11}$" data-flags="g,m">Greece - Social Security (AMKA)</option>
+                            <option data-pattern="^[A-Z]{6}[0-9]{2}[A-E,H,L,M,P,R-T][0-9]{2}[A-Z0-9]{5}$" data-flags="g,i,m">Italy - Codice Fiscale</option>
+                            <option data-pattern="^\d{11}$" data-flags="g,m">Lithuania - Personal Code (Asmens kodas)</option>
+                            <option data-pattern="^[0-9]{9}$" data-flags="g,m">Netherlands - BSN Number</option>
+                             <option data-pattern="^\d{11}$" data-flags="g,m">Norway - National ID (Fødselsnummer)</option>
+                            <option data-pattern="^[0-9]{4}[0-3]{1}[0-9]{1}[0-9]{5}$" data-flags="g,m">Poland - National ID (PESEL)</option>
+                            <option data-pattern="^(\d{6}|\d{8})[-|(\s)]{0,1}\d{4}$" data-flags="g,m">Sweden - Social Security (Personnummer)</option>
+                            <option data-pattern="^\b\d{3}\s\d{3}\s\d{4}\b$" data-flags="g,m">UK - NHS Number</option>
+                            <option data-pattern="^[A-Z]{2}[0-9]{6}[A-DFM]{1}$" data-flags="g,m">UK - National Insurance (NINO)</option>
+                        </optgroup>
+                        
+                        <optgroup label="National IDs (North America)">
+                            <option data-pattern="\b\d{3}-\d{2}-\d{4}\b" data-flags="g">USA - Social Security (SSN)</option>
+                             <option data-pattern="^\b((0[0-9])|(1[0-2])|(2[1-9])|(3[0-2])|(6[1-9])|(7[0-2])|80)([0-9]{7})\b$" data-flags="g,m">USA - ABA Routing Number</option>
+                            <option data-pattern="\b\d{3}[- ]?\d{3}[- ]?\d{3}\b" data-flags="g">Canada - Social Insurance (SIN)</option>
+                        </optgroup>
+
+
+                        <optgroup label="National IDs (Asia-Pacific / Other)">
+                            <option data-pattern="\b\d{3}\.\d{3}\.\d{3}-\d{2}\b" data-flags="g">Brazil - CPF Number</option>
+                            <option data-pattern="\b\d{17}[\dX]\b" data-flags="g,i">China - ID Card (18-digit)</option>
+                            <option data-pattern="\b[A-Z]{5}\d{4}[A-Z]\b" data-flags="g,i">India - PAN Card</option>
+                            <option data-pattern="^\d{12}$" data-flags="g,m">Japan - My Number (個人番号)</option>
+                             <option data-pattern="^\d{6}-\d{7}$" data-flags="g,m">South Korea - Resident Reg No (RRNO)</option>
+                             <option data-pattern="^\d{6}-\d{2}-\d{4}$" data-flags="g,m">Malaysia - NRIC Number</option>
+                             <option data-pattern="\b[STFG]\d{7}[A-Z]\b" data-flags="g,i">Singapore - NRIC/FIN</option>
+                             <option data-pattern="\b\d{9}|\d{12}\b" data-flags="g,m">Vietnam - ID Card Number (CCCD/CMND)</option>
+                             <option data-pattern="\b\d{11}\b" data-flags="g,m">Turkey - National ID (TC Kimlik)</option>
+                             <option data-pattern="\b\d{11}\b" data-flags="g,m">Qatar - QID Number</option>
+                             <option data-pattern="\b784-\d{4}-\d{7}-\d{1}\b" data-flags="g">United Arab Emirates - ID Card Number</option>
+                        </optgroup>
+                        
+                        <optgroup label="Passports">
+                            <option data-pattern="^[a-zA-Z]{2}\d{6}$" data-flags="g,i">Belgium - Passport</option>
+                            <option data-pattern="^\d{10}$" data-flags="g,m">Bulgaria - Passport</option>
+                            <option data-pattern="^[A-Za-z]{2}[0-9]{7}$" data-flags="g,i">Finland / Lithuania - Passport</option>
+                            <option data-pattern="\b\d{2}[A-Z]{2}\d{5}\b" data-flags="g,i">France - Passport</option>
+                            <option data-pattern="^\b[cfghjk]\d{3}\w{5}\d\b$" data-flags="g,i,m">Germany - Passport ID</option>
+                            <option data-pattern="^[A-Z]{2}\d{7}$" data-flags="g,i">Greece / Italy / Poland - Passport</option>
+                            <option data-pattern="^[N]{1}[P]{1}\d{7}$" data-flags="g,i">Netherlands - Passport</option>
+                            <option data-pattern="\b\d{9}\b" data-flags="g,m">UK / Norway / Sweden / Denmark / Croatia / Estonia / Cyprus / USA / Qatar - Passport ID</option>
+                            <option data-pattern="^[A-Z]\d{8}$" data-flags="g,i">Brazil - Passport</option>
+                           <option data-pattern="^(G|P|S|E)\d{8}$" data-flags="g,i">China - Passport</option>
+                           <option data-pattern="^[A-Z]{1}\d{7}$" data-flags="g,i">India / Turkey - Passport</option>
+                           <option data-pattern="^[MT]{1}\d{8}$" data-flags="g,i">Japan - Passport</option>
+                           <option data-pattern="^[MSR]\d{8}$" data-flags="g,i">South Korea - Passport</option>
+                           <option data-pattern="^[AHK]\d{8}$" data-flags="g,i">Malaysia - Passport</option>
+                           <option data-pattern="^[EK]\d{8}$" data-flags="g,i">Singapore - Passport</option>
+                           <option data-pattern="^[A-Z]{1}\d{8}$" data-flags="g,i">United Arab Emirates - Passport</option>
+                           <option data-pattern="^[BCN]\d{7}$" data-flags="g,i">Vietnam - Passport</option>
+                        </optgroup>
+
+
+                        <optgroup label="Postal Codes">
+                            <option data-pattern="^\b\d{5}(?:-\d{4})?\b$" data-flags="g,m">USA - ZIP Code</option>
+                            <option data-pattern="^(?:[ABCEGHJ-NPRSTVXY]\d[A-Z][ -]?\d[A-Z]\d)$" data-flags="g,i,m">Canada - Postal Code</option>
+                            <option data-pattern="^\d{4}$" data-flags="g,m">Belgium / Denmark / Norway / Bulgaria / Cyprus - Postal Code</option>
+                            <option data-pattern="^\d{5}$" data-flags="g,m">Germany / France / Finland / Spain / Italy / Estonia / Greece / Croatia / Lithuania / Turkey / Vietnam / Malaysia / UAE / Qatar - Postal Code</option>
+                             <option data-pattern="\d{2}-\d{3}" data-flags="g,m">Poland - Postal Code</option>
+                            <option data-pattern="^\b\d{5}\b" data-flags="g,m">Brazil / South Korea - Postal Code</option>
+                            <option data-pattern="\b\d{3}-\d{4}\b" data-flags="g,m">Japan - Postal Code</option>
+                            <option data-pattern="^([A-PR-UWYZ0-9][A-HK-Y0-9][AEHMNPRTVXY0-9]?[ABEHMNPRVWXY0-9]? {1,2}[0-9][ABD-HJLN-UW-Z]{2}|GIR 0AA)$" data-flags="g,i,m">UK - Postal Code</option>
+                            <option data-pattern="^(?:NL-)?(?:[1-9]\d{3} ?(?:[A-EGHJ-NPRTVWXZ][A-EGHJ-NPRSTVWXZ]|S[BCEGHJ-NPRTVWXZ]))$" data-flags="g,i,m">Netherlands - Postal Code</option>
+                            <option data-pattern="^(s-|S-){0,1}[0-9]{3}\s?[0-9]{2}$" data-flags="g,i,m">Sweden - Postal Code</option>
+                            <option data-pattern="^\d{6}$" data-flags="g,m">Singapore / China / India - Postal Code</option>
+                        </optgroup>
+
+
+                         <optgroup label="Phone Numbers (Specific Countries)">
+                             <option data-pattern="\+1[ -]?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}" data-flags="g">USA/Canada - Phone</option>
+                             <option data-pattern="\+32[ -]?\d{1,3}[ -]?\d{6,8}" data-flags="g">Belgium - Phone</option>
+                             <option data-pattern="\+55[ -]?\(?\d{2}\)?[- ]?\d{4,5}[- ]?\d{4}" data-flags="g">Brazil - Phone</option>
+                             <option data-pattern="\+359[ -]?\d{1,3}[ -]?\d{6,}" data-flags="g">Bulgaria - Phone</option>
+                             <option data-pattern="\+86[ -]?\d{3,4}[ -]?\d{7,8}" data-flags="g">China - Phone</option>
+                             <option data-pattern="\+385[ -]?\d{1,2}[ -]?\d{6,}" data-flags="g">Croatia - Phone</option>
+                             <option data-pattern="\+357[ -]?\d{8}" data-flags="g">Cyprus - Phone</option>
+                             <option data-pattern="\+45[ -]?\d{8}" data-flags="g">Denmark - Phone</option>
+                             <option data-pattern="\+372[ -]?\d{7,8}" data-flags="g">Estonia - Phone</option>
+                             <option data-pattern="\+358[ -]?\d{1,3}[ -]?\d{5,8}" data-flags="g">Finland - Phone</option>
+                             <option data-pattern="\+33[ -]?[1-9](?:[ -]?\d{2}){4}" data-flags="g">France - Phone</option>
+                             <option data-pattern="\+49[ -]?(\d{2,5}[ -]?\d{6,})|\(0\d{2,5}\)[ -]?\d{6,}|0\d{2,5}[ -]?\d{6,}" data-flags="g">Germany - Phone</option>
+                             <option data-pattern="\+30[ -]?\d{10}" data-flags="g">Greece - Phone</option>
+                             <option data-pattern="\+91[ -]?\d{10}" data-flags="g">India - Phone</option>
+                             <option data-pattern="\+39[ -]?\d{6,11}" data-flags="g">Italy - Phone</option>
+                             <option data-pattern="\+81[ -]?\d{1,4}[ -]?\d{1,4}[ -]?\d{4}" data-flags="g">Japan - Phone</option>
+                             <option data-pattern="\+370[ -]?\d{8}" data-flags="g">Lithuania - Phone</option>
+                             <option data-pattern="\+60[ -]?\d{1,2}[ -]?\d{7,8}" data-flags="g">Malaysia - Phone</option>
+                             <option data-pattern="\+31[ -]?\d{1,3}[ -]?\d{6,8}" data-flags="g">Netherlands - Phone</option>
+                             <option data-pattern="\+47[ -]?\d{8}|(?:\d{2}[ -]?){3}\d{2}" data-flags="g">Norway - Phone</option>
+                             <option data-pattern="\+48[ -]?\d{9}" data-flags="g">Poland - Phone</option>
+                             <option data-pattern="\+974[ -]?\d{8}" data-flags="g">Qatar - Phone</option>
+                             <option data-pattern="\+65[ -]?\d{8}" data-flags="g">Singapore - Phone</option>
+                             <option data-pattern="\+82[ -]?\d{1,2}[ -]?\d{3,4}[ -]?\d{4}" data-flags="g">South Korea - Phone</option>
+                             <option data-pattern="\+46[ -]?\(?0?\)?\d{1,3}[ -]?\d{5,8}" data-flags="g">Sweden - Phone</option>
+                             <option data-pattern="\+90[ -]?\(?\d{3}\)?[- ]?\d{3}[- ]?\d{4}" data-flags="g">Turkey - Phone</option>
+                             <option data-pattern="\+971[ -]?\d{1,2}[ -]?\d{7}" data-flags="g">United Arab Emirates - Phone</option>
+                             <option data-pattern="\+44[ -]?\d{4}[ -]?\d{6}|\(?0\d{4}\)?[ -]?\d{6}|0\d{10}" data-flags="g">UK - Phone</option>
+                             <option data-pattern="\+84[ -]?\d{9,10}" data-flags="g">Vietnam - Phone</option>
+                        </optgroup>
+
+
+                        <optgroup label="Security Related (Basic)">
+                            <option data-pattern="(['";\-=]|--|\b(UNION|SELECT|INSERT|UPDATE|DELETE|DROP)\b)" data-flags="gi">Potential SQL Injection</option>
+                             <option data-pattern="<script.*?>.*?<\/script>" data-flags="gi">Potential XSS (Script Tag)</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="text-group">
+                    <div class="section-header">
+                        <h2>Test Text</h2>
+                        <div class="button-group">
+                            <button class="btn copy-btn" id="copy-text-btn" data-target="text-input">Copy</button>
+                            <button class="btn btn-secondary clear-btn" id="clear-text-btn" data-target="text-input">Clear</button>
+                        </div>
+                    </div>
+                    <div class="text-input-wrapper">
+                        <label>Test Text</label>
+                        <div id="highlight-output" class="editor-base"></div>
+                        <textarea id="text-input" class="editor-base" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+                    </div>
+                </div>
+                
+                <div class="replace-group">
+                    <div class="section-header">
+                        <h2>Substitution</h2>
+                        <div class="button-group">
+                             <button class="btn btn-secondary clear-btn" id="clear-replace-btn" data-target="replacement-input">Clear</button>
+                        </div>
+                    </div>
+                    <div class="md-textfield">
+                        <textarea id="replacement-input" placeholder=" " rows="2"></textarea>
+                        <label for="replacement-input">Replacement String (use $1, $2...)</label>
+                    </div>
+                </div>
+
+
+            </div>
+            
+            <div class="output-column">
+
+
+                <div class="output-group">
+                    <h2>Matches</h2>
+                    <pre id="result-output" class="output-box"></pre>
+                </div>
+                
+                <div class="output-group">
+                    <div class="section-header">
+                        <h2>Replacement Result</h2>
+                        <button class="btn copy-btn" id="copy-result-btn" data-target="replace-output">Copy</button>
+                    </div>
+                    <pre id="replace-output" class="output-box"></pre>
+                </div>
+
+
+                <details class="cheatsheet-group">
+                    <summary>Regex Cheat Sheet</summary>
+                    <div class="cheatsheet-content">
+                        <table>
+                            <tr><th>Token</th><th>Description</th></tr>
+                            <tr><td><code>.</code></td><td>Any char except newline</td></tr>
+                            <tr><td><code>\d</code>, <code>\w</code>, <code>\s</code></td><td>Digit, Word, Whitespace</td></tr>
+                            <tr><td><code>\D</code>, <code>\W</code>, <code>\S</code></td><td>Not Digit, Word, Whitespace</td></tr>
+                            <tr><td><code>[abc]</code></td><td>Any of a, b, or c</td></tr>
+                            <tr><td><code>[^abc]</code></td><td>Not a, b, or c</td></tr>
+                            <tr><td><code>[a-z]</code></td><td>Chars a through z</td></tr>
+                            <tr><td><code>a|b</code></td><td>a or b</td></tr>
+                            <tr><td><code>^</code>, <code>$</code></td><td>Start/End of string (or line with <code>m</code>)</td></tr>
+                            <tr><td><code>\b</code>, <code>\B</code></td><td>Word boundary, Not word boundary</td></tr>
+                            <tr><td><code>*</code>, <code>+</code>, <code>?</code></td><td>0+, 1+, 0 or 1 repetition</td></tr>
+                            <tr><td><code>{n}</code>, <code>{n,}</code>, <code>{n,m}</code></td><td>Exactly n, n or more, between n and m</td></tr>
+                            <tr><td><code>(...)</code></td><td>Capture Group</td></tr>
+                            <tr><td><code>(?:...)</code></td><td>Non-capturing group</td></tr>
+                            <tr><td><code>(?=...)</code></td><td>Positive lookahead</td></tr>
+                            <tr><td><code>(?!...)</code></td><td>Negative lookahead</td></tr>
+                        </table>
+                    </div>
+                </details>
+            </div>
+
+
+        </div> </div> <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+
+            // --- Get All DOM Elements ---
+            const regexInput = document.getElementById('regex-input');
+            const textInput = document.getElementById('text-input');
+            const replacementInput = document.getElementById('replacement-input');
+            const resultOutput = document.getElementById('result-output');
+            const replaceOutput = document.getElementById('replace-output');
+            const highlightOutput = document.getElementById('highlight-output');
+            const errorMessage = document.getElementById('error-message');
+            const patternLibrary = document.getElementById('pattern-library');
+            
+            // Flag toggles
+            const flagToggles = document.querySelectorAll('.flag-toggle input[type="checkbox"]');
+            
+            // Copy buttons
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            
+            // Clear Buttons
+            const clearButtons = document.querySelectorAll('.clear-btn');
+            
+            // LocalStorage key
+            const STORAGE_KEY = 'regexTesterSession';
+
+
+            // --- Helper Functions ---
+            
+            /**
+             * Escapes HTML special characters to prevent XSS.
+             * @param {string} str The string to escape.
+             * @returns {string} The escaped string.
+             */
+            function escapeHTML(str) {
+                return str.replace(/[&<>"']/g, function(match) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    }[match];
+                });
+            }
+
+
+            /**
+             * Gathers checked flags into a string.
+             * @returns {string} A string of flags (e.g., "gim").
+             */
+            function getFlags() {
+                let flags = '';
+                flagToggles.forEach(toggle => {
+                    if (toggle.checked) {
+                        flags += toggle.value;
+                    }
+                });
+                return flags;
+            }
+            
+            /**
+             * Gathers checked flags into an object.
+             * @returns {object} An object of flags (e.g., {g: true, i: true}).
+             */
+            function getFlagsObject() {
+                const flags = {};
+                flagToggles.forEach(toggle => {
+                    flags[toggle.value] = toggle.checked;
+                });
+                return flags;
+            }
+
+
+            /**
+             * Sets flag checkboxes based on a string.
+             * @param {string} flagsString A string of flags (e.g., "gi").
+             */
+            function setFlags(flagsString = "") {
+                const flags = new Set(flagsString.split(''));
+                flagToggles.forEach(toggle => {
+                    toggle.checked = flags.has(toggle.value);
+                });
+            }
+
+
+            /**
+             * Saves the current state to localStorage.
+             */
+            function saveState() {
+                try {
+                    const session = {
+                        pattern: regexInput.value,
+                        text: textInput.value,
+                        replace: replacementInput.value,
+                        flags: getFlagsObject()
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+                } catch (e) {
+                    console.warn("Could not save to localStorage", e);
+                }
+            }
+
+
+            /**
+             * Loads state from localStorage on page load.
+             */
+            function loadState() {
+                try {
+                    const savedSession = localStorage.getItem(STORAGE_KEY);
+                    if (savedSession) {
+                        const session = JSON.parse(savedSession);
+                        regexInput.value = session.pattern || '';
+                        textInput.value = session.text || '';
+                        replacementInput.value = session.replace || '';
+                        
+                        if (session.flags) {
+                            flagToggles.forEach(toggle => {
+                                toggle.checked = session.flags[toggle.value] || false;
+                            });
+                        }
+                    } else {
+                        // Default example if no session
+                        regexInput.value = '(a(p)p(l))e';
+                        textInput.value = 'An apple a day. Another apple and an APPLE.';
+                        document.getElementById('flag-g').checked = true;
+                        document.getElementById('flag-i').checked = true;
+                    }
+                } catch (e) {
+                    console.warn("Could not load from localStorage", e);
+                    // Load default example on error
+                    regexInput.value = '(a(p)p(l))e';
+                    textInput.value = 'An apple a day. Another apple and an APPLE.';
+                    document.getElementById('flag-g').checked = true;
+                    document.getElementById('flag-i').checked = true;
+                }
+                
+                // Trigger label animations
+                [regexInput, textInput, replacementInput].forEach(el => {
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+            }
+            
+            /**
+             * Handles "Copy to Clipboard" functionality.
+             * @param {Event} e The click event.
+             */
+            function handleCopyClick(e) {
+                const button = e.currentTarget;
+                const targetId = button.dataset.target;
+                const targetElement = document.getElementById(targetId);
+                
+                let textToCopy = '';
+                if (targetElement) {
+                    textToCopy = targetElement.value !== undefined ? targetElement.value : targetElement.textContent;
+                }
+                
+                if (targetId === 'regex-input') {
+                    // Special case: format regex with flags
+                    textToCopy = `/${regexInput.value}/${getFlags()}`;
+                }
+
+
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalText = button.textContent;
+                    button.textContent = 'Copied!';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.classList.remove('copied');
+                    }, 1500);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            }
+            
+            /**
+             * Handles "Clear" button functionality.
+             * @param {Event} e The click event.
+             */
+            function handleClearClick(e) {
+                const button = e.currentTarget;
+                const targetId = button.dataset.target;
+                const targetElement = document.getElementById(targetId);
+                
+                if (targetElement) {
+                    targetElement.value = ''; // Clear the text
+                    // Trigger 'input' event to update highlighting and results
+                    targetElement.dispatchEvent(new Event('input', { bubbles: true }));
+                    targetElement.focus(); // Re-focus for better UX
+                }
+            }
+
+
+            // --- Main Function ---
+            
+            /**
+             * Main function: validates regex, finds matches, highlights, and replaces.
+             */
+            function runRegexTest() {
+                const pattern = regexInput.value;
+                const text = textInput.value;
+                const replaceString = replacementInput.value;
+                const flags = getFlags();
+
+
+                // Clear previous state
+                errorMessage.textContent = '';
+                resultOutput.textContent = 'Testing...';
+                replaceOutput.textContent = '';
+                highlightOutput.innerHTML = escapeHTML(text); // Default: show plain text
+
+
+                if (!pattern) {
+                    resultOutput.textContent = 'Enter a pattern to begin.';
+                    return;
+                }
+                
+                let regex;
+                try {
+                    // Create the RegExp object
+                    regex = new RegExp(pattern, flags);
+                } catch (error) {
+                    errorMessage.textContent = `Invalid Regex: ${error.message}`;
+                    resultOutput.textContent = 'Error.';
+                    return;
+                }
+
+
+                // --- 1. Match Highlighting ---
+                try {
+                    // We need a global regex for highlighting all matches, even if 'g' isn't checked
+                    const highlightRegex = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g');
+                    let parts = [];
+                    let lastIndex = 0;
+                    let match;
+                    
+                    const escapedText = escapeHTML(text);
+
+
+                    while ((match = highlightRegex.exec(escapedText)) !== null) {
+                        // Add text before the match
+                        parts.push(escapedText.slice(lastIndex, match.index));
+                        // Add the highlighted match
+                        parts.push(`<mark>${match[0]}</mark>`);
+                        lastIndex = highlightRegex.lastIndex;
+
+
+                        // Prevent infinite loops with zero-width matches
+                        if (match.index === highlightRegex.lastIndex) {
+                            highlightRegex.lastIndex++;
+                        }
+                    }
+                    // Add any remaining text after the last match
+                    parts.push(escapedText.slice(lastIndex));
+                    
+                    highlightOutput.innerHTML = parts.join('');
+                
+                } catch (e) {
+                    // Highlighting can fail (e.g., catastrophic backtracking)
+                    // We'll just show the error and continue
+                    errorMessage.textContent = `Highlighting Error: ${e.message}`;
+                }
+
+
+
+
+                // --- 2. Match List Output ---
+                try {
+                    let matches = [];
+                    // Use the user-defined regex (with original flags) for the list
+                    if (flags.includes('g')) {
+                        if (typeof text.matchAll === 'function') {
+                            matches = Array.from(text.matchAll(regex));
+                        } else {
+                            let match;
+                            while ((match = regex.exec(text)) !== null) {
+                                if (match.index === regex.lastIndex) regex.lastIndex++;
+                                matches.push(match);
+                            }
+                        }
+                    } else {
+                        const match = regex.exec(text);
+                        if (match) matches.push(match);
+                    }
+
+
+                    if (matches.length === 0) {
+                        resultOutput.textContent = 'No matches found.';
+                    } else {
+                        let output = `Matches (${matches.length} total):\n\n`;
+                        matches.forEach((match, index) => {
+                            const fullMatch = JSON.stringify(match[0]);
+                            const groups = match.slice(1);
+                            
+                            output += `Match ${index + 1} (at index ${match.index}):\n`;
+                            output += `  Full: ${fullMatch}\n`;
+                            
+                            if (groups.length > 0) {
+                                const groupStrings = groups.map(g => JSON.stringify(g === undefined ? 'undefined' : g));
+                                output += `  Groups: [${groupStrings.join(', ')}]\n`;
+                            }
+                            output += '\n';
+                        });
+                        resultOutput.textContent = output;
+                    }
+                } catch (e) {
+                    resultOutput.textContent = `Error during matching: ${e.message}`;
+                }
+                
+                // --- 3. Replacement Output ---
+                try {
+                    // Use replaceAll if global, otherwise replace
+                    if (flags.includes('g')) {
+                        replaceOutput.textContent = text.replaceAll(regex, replaceString);
+                    } else {
+                        replaceOutput.textContent = text.replace(regex, replaceString);
+                    }
+                } catch (e) {
+                    replaceOutput.textContent = `Error during replacement: ${e.message}`;
+                }
+                
+                // --- 4. Save State ---
+                saveState();
+            }
+
+
+            // --- Event Listeners ---
+            
+            // Run test on any input change
+            [regexInput, textInput, replacementInput].forEach(el => {
+                el.addEventListener('input', runRegexTest);
+            });
+            
+            flagToggles.forEach(toggle => {
+                toggle.addEventListener('change', runRegexTest);
+            });
+
+
+            // Sync scrolling
+            textInput.addEventListener('scroll', () => {
+                highlightOutput.scrollTop = textInput.scrollTop;
+                highlightOutput.scrollLeft = textInput.scrollLeft;
+            });
+            
+            // Pattern Library loader
+            patternLibrary.addEventListener('change', (e) => {
+                const selected = e.target.options[e.target.selectedIndex];
+                const pattern = selected.dataset.pattern;
+                const flags = selected.dataset.flags;
+                
+                if (pattern) {
+                    regexInput.value = pattern;
+                    setFlags(flags);
+                    // Manually trigger label float
+                    regexInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Run the test
+                    runRegexTest();
+                }
+            });
+            
+            // Copy button listeners
+            copyButtons.forEach(btn => {
+                btn.addEventListener('click', handleCopyClick);
+            });
+            
+            // Clear button listeners
+            clearButtons.forEach(btn => {
+                btn.addEventListener('click', handleClearClick);
+            });
+
+
+
+
+            // --- Initial Load ---
+            loadState();
+            runRegexTest(); // Run once on load with saved/default state
+        });
+    </script>
+
+
+</body>
+</html>
