@@ -765,9 +765,11 @@
             // --- Helper Functions ---
             
             /**
-             * Escapes HTML special characters to prevent XSS.
-             * @param {string} str The string to escape.
-             * @returns {string} The escaped string.
+             * Escapes HTML special characters in a string to prevent cross-site scripting (XSS) attacks.
+             * This function replaces characters like '&', '<', '>', '"', and "'" with their corresponding HTML entities.
+             *
+             * @param {string} str The input string to be escaped.
+             * @returns {string} The HTML-escaped string. Returns an empty string if the input is not a string.
              */
             function escapeHTML(str) {
                 if (typeof str !== 'string') return '';
@@ -783,8 +785,10 @@
             }
 
             /**
-             * Gathers checked flags into a string.
-             * @returns {string} A string of flags (e.g., "gim").
+             * Collects the values of all checked regex flag checkboxes and concatenates them into a single string.
+             * This string is used for creating the `RegExp` object.
+             *
+             * @returns {string} A string containing the selected flags (e.g., "gi", "m", "igu").
              */
             function getFlags() {
                 let flags = '';
@@ -797,8 +801,10 @@
             }
             
             /**
-             * Gathers checked flags into an object.
-             * @returns {object} An object of flags (e.g., {g: true, i: true}).
+             * Creates an object representing the state of all regex flag checkboxes.
+             * This is primarily used for saving the session state to localStorage.
+             *
+             * @returns {Object<string, boolean>} An object where keys are flag characters (e.g., 'g', 'i') and values are booleans indicating if they are checked.
              */
             function getFlagsObject() {
                 const flags = {};
@@ -809,8 +815,10 @@
             }
 
             /**
-             * Sets flag checkboxes based on a string.
-             * @param {string} flagsString A string of flags (e.g., "gi").
+             * Updates the state of the flag checkboxes based on a provided flag string.
+             * Any checkboxes corresponding to a flag in the string will be checked.
+             *
+             * @param {string} [flagsString=""] A string containing the flags to be set (e.g., "gi").
              */
             function setFlags(flagsString = "") {
                 const flags = new Set(flagsString.split(''));
@@ -820,7 +828,8 @@
             }
 
             /**
-             * Saves the current state to localStorage.
+             * Serializes the current application state (regex pattern, test text, replacement string, and flags)
+             * and saves it to the browser's localStorage. This allows the state to persist across sessions.
              */
             function saveState() {
                 try {
@@ -837,7 +846,8 @@
             }
 
             /**
-             * Loads state from localStorage on page load.
+             * Retrieves the saved session from localStorage and restores the application to its previous state.
+             * If no saved state is found, it loads a default example.
              */
             function loadState() {
                 try {
@@ -876,8 +886,11 @@
             }
             
             /**
-             * Handles "Copy to Clipboard" functionality.
-             * @param {Event} e The click event.
+             * Handles click events for all "Copy" buttons. It reads the `data-target` attribute
+             * from the button to identify which element's content to copy to the clipboard.
+             * Provides visual feedback by changing the button text temporarily.
+             *
+             * @param {MouseEvent} e The mouse click event object.
              */
             function handleCopyClick(e) {
                 const button = e.currentTarget;
@@ -908,8 +921,11 @@
             }
             
             /**
-             * Handles "Clear" button functionality.
-             * @param {Event} e The click event.
+             * Handles click events for all "Clear" buttons. It reads the `data-target` attribute
+             * to identify which input element to clear. After clearing, it triggers an `input` event
+             * to ensure the application state updates accordingly.
+             *
+             * @param {MouseEvent} e The mouse click event object.
              */
             function handleClearClick(e) {
                 const button = e.currentTarget;
@@ -927,7 +943,14 @@
             // --- Main Function ---
             
             /**
-             * Main function: validates regex, finds matches, highlights, and replaces.
+             * The core function of the application. It is triggered on any input change.
+             * It performs the following steps:
+             * 1. Reads the regex pattern, test text, replacement string, and flags.
+             * 2. Validates the regex; displays an error if invalid.
+             * 3. Highlights all matches in the test text area.
+             * 4. Lists all found matches and their capture groups in the "Matches" output box.
+             * 5. Performs a substitution on the test text and displays the result.
+             * 6. Saves the current state to localStorage.
              */
             function runRegexTest() {
                 const pattern = regexInput.value;
@@ -1048,7 +1071,12 @@
                 saveState();
             }
 
-            // --- File Scan Function ---
+            /**
+             * Handles the file scanning process. It reads a user-selected file,
+             * applies the current regex pattern to its content, and generates a text report.
+             * The report, which includes all matches, is then triggered for download.
+             * The 'g' flag is enforced for file scanning.
+             */
             function scanFile() {
                 scanStatus.textContent = '';
                 scanFileBtn.disabled = true;
@@ -1147,9 +1175,11 @@
             }
 
             /**
-             * Creates and triggers a download for the report.
-             * @param {string} text - The content of the report.
-             * @param {string} filename - The desired name for the downloaded file.
+             * Creates a Blob from a text string and initiates a browser download.
+             * This is used to save the file scan report.
+             *
+             * @param {string} text The text content to be included in the downloadable file.
+             * @param {string} filename The suggested filename for the downloaded file.
              */
             function downloadReport(text, filename) {
                 const blob = new Blob([text], { type: 'text/plain' });
